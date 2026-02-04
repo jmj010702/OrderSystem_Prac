@@ -2,6 +2,7 @@ package com.beyound.ordersystem.common.repository;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,8 +17,11 @@ public class SseEmitterRegistry {
         this.emitterMap.put(email, sseEmitter);
     }
 
-    public SseEmitter getEmitter(String email){
+    public SseEmitter getEmitter(String email) {
         return this.emitterMap.get(email);
     }
 
+    public void removeEmitter(String email) {
+        this.emitterMap.remove(email);
+    }
 }

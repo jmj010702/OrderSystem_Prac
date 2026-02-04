@@ -1,5 +1,6 @@
 package com.beyound.ordersystem.common.config;
 
+import com.beyound.ordersystem.common.service.SseAlarmService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +9,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -32,8 +36,7 @@ public class RedisConfig {
         configuration.setPort(port);
 
         configuration.setDatabase(0);
-
-        return new LettuceConnectionFactory();
+        return new LettuceConnectionFactory(configuration);
     }
 
     //    템플릿빈 객체 (자료구조 타입 설계)
@@ -42,7 +45,7 @@ public class RedisConfig {
     @Qualifier("rtInventory")
 //    모든 template중에 무조건 redisTemplate라는 메서드 명이 반드시 1개는 있어여함
 //   bean객체 생성 시, bean객체 간에 DI(의존성 주입)는 "메서드 파라미터 주입"이 가능
-    public RedisTemplate<String, String> redisTemplate(@Qualifier("rtInventory")RedisConnectionFactory redisConnectionFactory) { // 해당 redisConnectionFactory는 위에 선언한 Bean 객체다
+    public RedisTemplate<String, String> redisTemplate(@Qualifier("rtInventory") RedisConnectionFactory redisConnectionFactory) { // 해당 redisConnectionFactory는 위에 선언한 Bean 객체다
 
         RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
 //        redis에 키를 저장 하는데 string으로 만들어서 넣는다
@@ -59,25 +62,67 @@ public class RedisConfig {
     @Qualifier("stockInventory")
     public RedisConnectionFactory stockConnectionFactory() {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-
         configuration.setHostName(host);
-
         configuration.setPort(port);
-
         configuration.setDatabase(1);
-
-        return new LettuceConnectionFactory();
+        return new LettuceConnectionFactory(configuration);
     }
-
     @Bean
     @Qualifier("stockInventory")
-    public RedisTemplate<String, String> stockRedisTemplate(@Qualifier("stockInventory")RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, String> stockRedisTemplate(@Qualifier("stockInventory") RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new StringRedisSerializer());
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-
         return redisTemplate;
     }
+
+
+//------------------------------------------------------------------------------------
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisConnectionFactory ssePubSubConnectionFactory() {
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+//        redis pub/sub 기능은 db에 값을 저장하는 기능이 아니므로, 특정 DB에 의존적이지 않음.
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisTemplate<String, String> ssePubSubRedisTemplate(@Qualifier("ssePubSub") RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
+
+    //  redis 리스너 객체(subscribe)
+//    호출 구조 : RedisMessageListenerContainer(채널을 리슨중 ) -> MessageListenerAdapter(메세지 들어오면)  -> SseAlarmService(messageListener)
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisMessageListenerContainer redisMessageListenerContainer(@Qualifier("ssePubSub") RedisConnectionFactory redisConnectionFactory, @Qualifier("ssePubSub") MessageListenerAdapter messageListenerAdapter) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisConnectionFactory);
+        container.addMessageListener(messageListenerAdapter, new PatternTopic("order-channel"));
+//        여러개일 경우  아래 처럼 add를 해줘야 ㅎ함
+//        container.addMessageListener(messageListenerAdapter, new PatternTopic("order-channel"));
+//        container.addMessageListener(messageListenerAdapter, new PatternTopic("order-channel"));
+//        만약에 여러 채널을 구독해야 하는 경우, 여러개의 PatternTopic을 add하거나, 별도의 Listener Bean객체 생성
+        return container;
+    }
+
+    //    redis에서 수신된 메시지를 처리하는 객체
+    @Bean
+    @Qualifier("ssePubSub")
+    public MessageListenerAdapter messageListenerAdapter(SseAlarmService sseAlarmService) {
+//        채널로부터 수신되는 message처리를 SseAlramService의 onMessage메서드로 위임
+        return new MessageListenerAdapter(sseAlarmService, "onMessage");
+    }
+    //-------------------------------------------------------------------------------------------
+
+
 
 }

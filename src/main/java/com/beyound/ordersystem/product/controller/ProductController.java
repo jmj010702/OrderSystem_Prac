@@ -3,6 +3,7 @@ package com.beyound.ordersystem.product.controller;
 import com.beyound.ordersystem.product.dto.ProductCreateDto;
 import com.beyound.ordersystem.product.dto.ProductListDto;
 import com.beyound.ordersystem.product.dto.ProductSearchDto;
+import com.beyound.ordersystem.product.dto.ProductUpdateDto;
 import com.beyound.ordersystem.product.entity.Product;
 import com.beyound.ordersystem.product.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 
 
 @RestController
@@ -26,9 +26,9 @@ public class ProductController {
         this.productService = productService;
     }
 
-@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
-    public ResponseEntity<?> create(@ModelAttribute  ProductCreateDto dto) {
+    public ResponseEntity<?> create(@ModelAttribute ProductCreateDto dto) {
         Product product = productService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(product.getId());
 
@@ -43,7 +43,11 @@ public class ProductController {
     public ResponseEntity<?> findAll(Pageable pageable, ProductSearchDto dto) {
         Page<ProductListDto> productListDtos = productService.findAll(pageable, dto);
         return ResponseEntity.status(HttpStatus.OK).body(productListDtos);
-
     }
 
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id, @ModelAttribute ProductUpdateDto dto) {
+        productService.update(id,dto);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body("OK");
+    }
 }

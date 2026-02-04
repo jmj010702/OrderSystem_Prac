@@ -40,9 +40,16 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+
+//   재고관련 rdb동기화 작업을 이벤트 기반 비동기적으로 처리하기 위한 rabbitmq의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+//    swagger를 사용하기 위한 의존성 추가
+//    접속 url : http://localhost:8080/swagger-ui.html
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'software.amazon.awssdk:s3:2.29.50'
-
 }
 
 tasks.named('test') {

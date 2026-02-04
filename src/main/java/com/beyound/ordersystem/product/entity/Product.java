@@ -2,6 +2,7 @@ package com.beyound.ordersystem.product.entity;
 
 import com.beyound.ordersystem.common.entity.BaseTimeEntity;
 import com.beyound.ordersystem.member.entity.Member;
+import com.beyound.ordersystem.product.dto.ProductUpdateDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,6 +38,14 @@ public class Product extends BaseTimeEntity {
 
     public void updateStockQuantity(Long orderQuantity) {
         this.stockQuantity = this.stockQuantity - orderQuantity;
+    }
+
+    public void updateProduct(ProductUpdateDto dto) {
+        this.name = dto.getName();
+        this.price = dto.getPrice();
+        this.category = dto.getCategory();
+        this.stockQuantity = dto.getStockQuantity();
+
     }
 }
 

@@ -23,11 +23,15 @@ public class SseController {
 
     @GetMapping("/connect")
     public SseEmitter connect(@AuthenticationPrincipal String email) throws IOException {
-        String email1 = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         SseEmitter sseEmitter = new SseEmitter(60 * 60 * 1000L); //1시간 유효시간
         sseEmitterRegistry.addSseEmitter(email, sseEmitter);
-
         sseEmitter.send(SseEmitter.event().name("connect").data("연결완료"));
         return sseEmitter;
     }
+
+    @GetMapping("/disconnect")
+    public void disconnect(@AuthenticationPrincipal String email) throws IOException {
+        sseEmitterRegistry.removeEmitter(email);
+    }
+
 }
